@@ -1,4 +1,4 @@
-package rs
+package sqlhelp
 
 import (
     "database/sql"
