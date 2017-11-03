@@ -5,7 +5,7 @@ import (
 )
 
 func GetResultsChannel(db *sql.DB, query string) (chan map[string]interface{}, chan error) {
-    results := make(chan map[string]interface{})
+    results := make(chan map[string]interface{}, 5000)
     errchan := make(chan error)
 
     go func() {
