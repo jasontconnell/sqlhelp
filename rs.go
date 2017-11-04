@@ -35,7 +35,6 @@ func GetResultsChannel(db *sql.DB, query string) (chan map[string]interface{}, e
 			for i, col := range cols {
 				valmap[col] = *(vals[i].(*interface{}))
 			}
-
 			results <- valmap
 		}
 
