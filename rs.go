@@ -38,6 +38,8 @@ func GetResultsChannel(db *sql.DB, query string) (chan map[string]interface{}, e
 
 			results <- valmap
 		}
+
+		close(results)
 	}()
 
 	return results, nil
