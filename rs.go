@@ -1,82 +1,82 @@
 package sqlhelp
 
 import (
-    "database/sql"
+	"database/sql"
 )
 
 func GetResultsChannel(db *sql.DB, query string) (chan map[string]interface{}, error) {
-    results := make(chan map[string]interface{})
+	results := make(chan map[string]interface{})
 
-    rows, eerr := db.Query(query)
-    if eerr != nil {
-        return nil, eerr
-    }
+	rows, eerr := db.Query(query)
+	if eerr != nil {
+		return nil, eerr
+	}
 
-    cols, cerr := rows.Columns()
-    if cerr != nil {
-        return nil, cerr
-    }
+	cols, cerr := rows.Columns()
+	if cerr != nil {
+		return nil, cerr
+	}
 
-    vals := make([]interface{}, len(cols))
-    for i := 0; i < len(cols); i++ {
-        vals[i] = new(interface{})
-    }
+	vals := make([]interface{}, len(cols))
+	for i := 0; i < len(cols); i++ {
+		vals[i] = new(interface{})
+	}
 
-    go func(){
-        defer rows.Close()
-        for rows.Next() {
-            scerr := rows.Scan(vals...)
+	go func() {
+		defer rows.Close()
+		for rows.Next() {
+			scerr := rows.Scan(vals...)
 
-            if scerr != nil {
-                panic(scerr)
-            }
+			if scerr != nil {
+				panic(scerr)
+			}
 
-            valmap := make(map[string]interface{})
-            for i, col := range cols {
-                valmap[col] = *(vals[i].(*interface{}))
-            }
+			valmap := make(map[string]interface{})
+			for i, col := range cols {
+				valmap[col] = *(vals[i].(*interface{}))
+			}
 
-            results <- valmap
-        }
-    }()
+			results <- valmap
+		}
+	}()
 
-    return results, nil
+	return results, nil
 }
 
 func GetResultSet(db *sql.DB, query string) ([]map[string]interface{}, error) {
-    ret := []map[string]interface{}{}
+	ret := []map[string]interface{}{}
 
-    rows, eerr := db.Query(query)
-    if eerr != nil {
-        return nil, eerr
-    }
+	rows, eerr := db.Query(query)
+	if eerr != nil {
+		return nil, eerr
+	}
 
-    defer rows.Close()
-   
-    cols, cerr := rows.Columns()
-    if cerr != nil {
-        return nil, cerr
-    }
+	defer rows.Close()
 
-    vals := make([]interface{}, len(cols))
-    for i := 0; i < len(cols); i++ {
-        vals[i] = new(interface{})
-    }
+	cols, cerr := rows.Columns()
+	if cerr != nil {
+		return nil, cerr
+	}
 
-    for rows.Next() {
-        scerr := rows.Scan(vals...)
+	vals := make([]interface{}, len(cols))
+	for i := 0; i < len(cols); i++ {
+		vals[i] = new(interface{})
+	}
 
-        if scerr != nil {
-            return nil, scerr
-        }
+	for rows.Next() {
+		scerr := rows.Scan(vals...)
 
-        valmap := make(map[string]interface{})
-        for i, col := range cols {
-            valmap[col] = *(vals[i].(*interface{}))
-        }
+		if scerr != nil {
+			return nil, scerr
+		}
 
-        ret = append(ret, valmap)
-    }
+		valmap := make(map[string]interface{})
+		for i, col := range cols {
+			valmap[col] = *(vals[i].(*interface{}))
+		}
 
-    return ret, nil
+		ret = append(ret, valmap)
+	}
+
+	return ret, nil
 }
