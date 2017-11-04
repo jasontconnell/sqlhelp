@@ -2,19 +2,18 @@ package sqlhelp
 
 import (
 	"database/sql"
+	//"fmt"
 )
 
-func GetResultsChannel(db *sql.DB, query string) (chan map[string]interface{}, error) {
-	results := make(chan map[string]interface{})
-
+func GetResultsChannel(db *sql.DB, query string, results chan map[string]interface{}) error {
 	rows, eerr := db.Query(query)
 	if eerr != nil {
-		return nil, eerr
+		return eerr
 	}
 
 	cols, cerr := rows.Columns()
 	if cerr != nil {
-		return nil, cerr
+		return cerr
 	}
 
 	vals := make([]interface{}, len(cols))
@@ -24,6 +23,8 @@ func GetResultsChannel(db *sql.DB, query string) (chan map[string]interface{}, e
 
 	go func() {
 		defer rows.Close()
+		defer close(results)
+		i := 0
 		for rows.Next() {
 			scerr := rows.Scan(vals...)
 
@@ -36,12 +37,11 @@ func GetResultsChannel(db *sql.DB, query string) (chan map[string]interface{}, e
 				valmap[col] = *(vals[i].(*interface{}))
 			}
 			results <- valmap
+			i++
 		}
-
-		close(results)
 	}()
 
-	return results, nil
+	return nil
 }
 
 func GetResultSet(db *sql.DB, query string) ([]map[string]interface{}, error) {
