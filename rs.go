@@ -12,24 +12,23 @@ func GetResultsChannel(db *sql.DB, query string) (chan map[string]interface{}, e
         return nil, eerr
     }
 
-    defer rows.Close()
-
     cols, cerr := rows.Columns()
     if cerr != nil {
         return nil, cerr
     }
 
-    go func(){
-        for rows.Next() {
-            vals := make([]interface{}, len(cols))
-            for i := 0; i < len(cols); i++ {
-                vals[i] = new(interface{})
-            }
+    vals := make([]interface{}, len(cols))
+    for i := 0; i < len(cols); i++ {
+        vals[i] = new(interface{})
+    }
 
+    go func(){
+        defer rows.Close()
+        for rows.Next() {
             scerr := rows.Scan(vals...)
 
             if scerr != nil {
-                //return nil, scerr
+                panic(scerr)
             }
 
             valmap := make(map[string]interface{})
@@ -39,7 +38,6 @@ func GetResultsChannel(db *sql.DB, query string) (chan map[string]interface{}, e
 
             results <- valmap
         }
-        close(results)
     }()
 
     return results, nil
