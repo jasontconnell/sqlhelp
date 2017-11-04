@@ -4,36 +4,32 @@ import (
     "database/sql"
 )
 
-func GetResultsChannel(db *sql.DB, query string) (chan map[string]interface{}, chan error) {
-    results := make(chan map[string]interface{}, 5000)
-    errchan := make(chan error)
+func GetResultsChannel(db *sql.DB, query string) (chan map[string]interface{}, error) {
+    results := make(chan map[string]interface{})
 
-    go func() {
-        rows, eerr := db.Query(query)
-        if eerr != nil {
-            errchan <- eerr
-            close(errchan)
-            return
-        }
+    rows, eerr := db.Query(query)
+    if eerr != nil {
+        return nil, eerr
+    }
 
-        cols, cerr := rows.Columns()
-        if cerr != nil {
-            errchan <- cerr
-            return
-        }
+    defer rows.Close()
 
-        vals := make([]interface{}, len(cols))
-        for i := 0; i < len(cols); i++ {
-            vals[i] = new(interface{})
-        }
+    cols, cerr := rows.Columns()
+    if cerr != nil {
+        return nil, cerr
+    }
 
+    go func(){
         for rows.Next() {
+            vals := make([]interface{}, len(cols))
+            for i := 0; i < len(cols); i++ {
+                vals[i] = new(interface{})
+            }
+
             scerr := rows.Scan(vals...)
 
             if scerr != nil {
-                errchan <- scerr
-                close(errchan)
-                return
+                //return nil, scerr
             }
 
             valmap := make(map[string]interface{})
@@ -42,11 +38,11 @@ func GetResultsChannel(db *sql.DB, query string) (chan map[string]interface{}, c
             }
 
             results <- valmap
-
         }
+        close(results)
     }()
 
-    return results, errchan
+    return results, nil
 }
 
 func GetResultSet(db *sql.DB, query string) ([]map[string]interface{}, error) {
@@ -56,6 +52,8 @@ func GetResultSet(db *sql.DB, query string) ([]map[string]interface{}, error) {
     if eerr != nil {
         return nil, eerr
     }
+
+    defer rows.Close()
    
     cols, cerr := rows.Columns()
     if cerr != nil {
